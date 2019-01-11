@@ -13,7 +13,6 @@ function exit_badly {
   exit 1
 }
 
-[[ $(lsb_release -rs) == "18.04" ]] || exit_badly "This script is for Ubuntu 18.04 only, aborting (if you know what you're doing, delete this check)."
 [[ $(id -u) -eq 0 ]] || exit_badly "Please re-run as root (e.g. sudo ./path/to/this/script)"
 
 echo "--- Updating and installing software ---"
@@ -330,8 +329,7 @@ echo "--- Timezone, mail, unattended upgrades ---"
 echo
 
 timedatectl set-timezone $TZONE
-/usr/sbin/update-locale LANG=en_GB.UTF-8
-
+/usr/sbin/update-locale LANG=en_US.UTF-8
 
 sed -r \
 -e "s/^myhostname =.*$/myhostname = ${VPNHOST}/" \
