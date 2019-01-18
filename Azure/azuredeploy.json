@@ -1,0 +1,329 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.5",
+  "parameters": {
+    "dnsName": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "minLength": 1,
+      "metadata": {
+        "description": "a DNS domain name label for a public IP resource, which creates a mapping for domainnamelabel.location.cloudapp.azure.com to the public IP address in the Azure-managed DNS servers. For instance, if you create a public IP resource with contoso as a domainnamelabel in the West US Azure location, the fully qualified domain name (FQDN) contoso.westus.cloudapp.azure.com resolves to the public IP address of the resource. You can use the FQDN to create a custom domain CNAME record pointing to the public IP address in Azure. Instead of, or in addition to, using the DNS name label with the default suffix, you can use the Azure DNS service to configure a DNS name with a custom suffix that resolves to the public IP address."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B1s"
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The admin user name of the VM"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The admin password of the VM"
+      }
+    }
+  },
+  "variables": {
+    "LoadBalancerId": "[resourceId('Microsoft.Network/loadBalancers', 'LoadBalancer')]"
+  },
+  "resources": [
+    {
+      "name": "VirtualNetwork",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [],
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "Subnet",
+            "properties": {
+              "addressPrefix": "10.0.0.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "IPv4",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [],
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[toLower(parameters('dnsName'))]"
+        }
+      }
+    },
+    {
+      "name": "IPv6",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [],
+      "properties": {
+        "publicIPAddressVersion": "IPv6",
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[toLower(parameters('dnsName'))]"
+        }
+      }
+    },
+    {
+      "comments": "Load balancer isn't required for single node - it's required for IPv6",
+      "apiVersion": "2016-03-30",
+      "name": "LoadBalancer",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "Microsoft.Network/publicIPAddresses/IPv4",
+        "Microsoft.Network/publicIPAddresses/IPv6"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "IPv4",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPv4')]"
+              }
+            }
+          },
+          {
+            "name": "IPv6",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses','IPv6')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "IPv4"
+          },
+          {
+            "name": "IPv6"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "IPv4-SSH",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv4')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv4')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 22,
+              "backendPort": 22,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "probe": {
+                "id": "[concat(variables('LoadBalancerID'),'/probes/SSH')]"
+              }
+            }
+          },
+          {
+            "name": "IPv4-UDP500",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv4')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv4')]"
+              },
+              "protocol": "Udp",
+              "frontendPort": 500,
+              "backendPort": 500,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "IPv4-UDP4500",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv4')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv4')]"
+              },
+              "protocol": "Udp",
+              "frontendPort": 4500,
+              "backendPort": 4500,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "IPv6-SSH",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv6')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv6')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 22,
+              "backendPort": 22,
+              "enableFloatingIP": false,
+              "probe": {
+                "id": "[concat(variables('LoadBalancerID'),'/probes/SSH')]"
+              }
+            }
+          },
+          {
+            "name": "IPv6-UDP500",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv6')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv6')]"
+              },
+              "protocol": "Udp",
+              "frontendPort": 500,
+              "backendPort": 500,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "IPv6-UDP4500",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv6')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv6')]"
+              },
+              "protocol": "Udp",
+              "frontendPort": 4500,
+              "backendPort": 4500,
+              "enableFloatingIP": false
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "SSH",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 22,
+              "intervalInSeconds": 60,
+              "numberOfProbes": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "NetworkInterface",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2018-01-01",
+      "copy": {
+        "name": "nicLoop",
+        "count": 1
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/', 'VirtualNetwork')]",
+        "[resourceId('Microsoft.Network/loadBalancers/', 'LoadBalancer')]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "IPv4",
+            "properties": {
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets','VirtualNetwork', 'Subnet')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(variables('LoadBalancerId'),'/backendAddressPools/IPv4')]"
+                }
+              ]
+            }
+          },
+          {
+            "name": "IPv6",
+            "properties": {
+              "privateIPAddressVersion": "IPv6",
+              "privateIPAllocationMethod": "Dynamic",
+            "loadBalancerBackendAddressPools": [
+              {
+                "id": "[concat(variables('LoadBalancerId'),'/backendAddressPools/IPv6')]"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+    {
+      "apiVersion": "2016-04-30-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "VirtualMachine",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "Microsoft.Network/networkInterfaces/NetworkInterface"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computername": "[parameters('dnsName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "osType": "Linux",
+            "name": "OS",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            },
+            "diskSizeGB": 32
+          },
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','NetworkInterface')]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "fqdn": {
+      "type": "string",
+      "value": "[reference('IPv4').dnsSettings.fqdn]"
+    }
+  }
+}
