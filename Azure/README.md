@@ -11,11 +11,11 @@ The template creates and configures the following Azure resources:
 
 - a private virtual network
 - two [Azure Public IP Addresses](https://docs.microsoft.com/azure/virtual-network/virtual-network-ip-addresses-overview-arm)
-  - a public IPv4 address
-  - a public IPv6 address
+  - IPv4 address
+  - IPv6 address
 - port forwarding NAT via an [Azure Load Balancer](https://docs.microsoft.com/azure/load-balancer/load-balancer-overview) who binds the public IPs and forwards to the private IPs on the VM
-- a Azure Network Interface who has a private IPv4 and IPv6 address
-- an Azure Virtual Machine who binds the network interface
+- an [Azure Network Interface](https://docs.microsoft.com/azure/virtual-network/virtual-network-network-interface-vm) who has a private IPv4 and IPv6 address
+- a linux [Azure Virtual Machine](https://docs.microsoft.com/azure/virtual-machines/linux/overview) who binds the network interface
 
 Template output:
 
