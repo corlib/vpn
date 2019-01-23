@@ -118,24 +118,18 @@
             "name": "IPv6"
           }
         ],
-        "loadBalancingRules": [
+        "inboundNatRules": [
           {
             "name": "IPv4-SSH",
             "properties": {
               "frontendIPConfiguration": {
                 "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv4')]"
               },
-              "backendAddressPool": {
-                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv4')]"
-              },
               "protocol": "Tcp",
               "frontendPort": 22,
               "backendPort": 22,
               "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 5,
-              "probe": {
-                "id": "[concat(variables('LoadBalancerID'),'/probes/SSH')]"
-              }
+              "idleTimeoutInMinutes": 5
             }
           },
           {
@@ -143,9 +137,6 @@
             "properties": {
               "frontendIPConfiguration": {
                 "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv4')]"
-              },
-              "backendAddressPool": {
-                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv4')]"
               },
               "protocol": "Udp",
               "frontendPort": 500,
@@ -159,9 +150,6 @@
               "frontendIPConfiguration": {
                 "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv4')]"
               },
-              "backendAddressPool": {
-                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv4')]"
-              },
               "protocol": "Udp",
               "frontendPort": 4500,
               "backendPort": 4500,
@@ -174,16 +162,10 @@
               "frontendIPConfiguration": {
                 "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv6')]"
               },
-              "backendAddressPool": {
-                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv6')]"
-              },
               "protocol": "Tcp",
               "frontendPort": 22,
               "backendPort": 22,
-              "enableFloatingIP": false,
-              "probe": {
-                "id": "[concat(variables('LoadBalancerID'),'/probes/SSH')]"
-              }
+              "enableFloatingIP": false
             }
           },
           {
@@ -191,9 +173,6 @@
             "properties": {
               "frontendIPConfiguration": {
                 "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv6')]"
-              },
-              "backendAddressPool": {
-                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv6')]"
               },
               "protocol": "Udp",
               "frontendPort": 500,
@@ -207,24 +186,10 @@
               "frontendIPConfiguration": {
                 "id": "[concat(variables('LoadBalancerID'),'/frontendIPConfigurations/IPv6')]"
               },
-              "backendAddressPool": {
-                "id": "[concat(variables('LoadBalancerID'),'/backendAddressPools/IPv6')]"
-              },
               "protocol": "Udp",
               "frontendPort": 4500,
               "backendPort": 4500,
               "enableFloatingIP": false
-            }
-          }
-        ],
-        "probes": [
-          {
-            "name": "SSH",
-            "properties": {
-              "protocol": "Tcp",
-              "port": 22,
-              "intervalInSeconds": 60,
-              "numberOfProbes": 1
             }
           }
         ]
@@ -257,6 +222,17 @@
                 {
                   "id": "[concat(variables('LoadBalancerId'),'/backendAddressPools/IPv4')]"
                 }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(variables('LoadBalancerId'),'/inboundNatRules/IPv4-SSH')]"
+                },
+                {
+                  "id": "[concat(variables('LoadBalancerId'),'/inboundNatRules/IPv4-UDP500')]"
+                },
+                {
+                  "id": "[concat(variables('LoadBalancerId'),'/inboundNatRules/IPv4-UDP4500')]"
+                }
               ]
             }
           },
@@ -268,6 +244,17 @@
             "loadBalancerBackendAddressPools": [
               {
                 "id": "[concat(variables('LoadBalancerId'),'/backendAddressPools/IPv6')]"
+              }
+            ],
+            "loadBalancerInboundNatRules": [
+              {
+                "id": "[concat(variables('LoadBalancerId'),'/inboundNatRules/IPv6-SSH')]"
+              },
+              {
+                "id": "[concat(variables('LoadBalancerId'),'/inboundNatRules/IPv6-UDP500')]"
+              },
+              {
+                "id": "[concat(variables('LoadBalancerId'),'/inboundNatRules/IPv6-UDP4500')]"
               }
             ]
           }
